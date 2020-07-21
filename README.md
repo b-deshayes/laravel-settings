@@ -1,4 +1,7 @@
 # laravel-settings
+
+![Units tests](https://github.com/Kotus-s/laravel-settings/workflows/Units%20tests/badge.svg?branch=master)
+
 Simple key/value secure settings stored in database
 
 ## Installation
