@@ -8,7 +8,7 @@ Simple key/value secure settings stored in database
 Install the package via composer.
 
 ```bash
-composer require kotus-s/laravel-settings
+composer require kotus/laravel-settings
 ```
 
 You can publish the migration and config files, then migrate the new settings table all in one go using:
