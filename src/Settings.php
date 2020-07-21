@@ -2,6 +2,7 @@
 
 namespace Kotus\Settings;
 
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
@@ -15,16 +16,15 @@ class Settings
      * Get the settings
      *
      * @param string $tenant
-     * @return array
+     * @return Collection
      */
-    private function getSettings(string $tenant = self::DEFAULT_TENANT): array
+    private function getSettings(string $tenant = self::DEFAULT_TENANT): Collection
     {
-        return Cache::rememberForever('settings' . $tenant, static function () use ($tenant) {
+        return Cache::rememberForever('settings.' . $tenant, static function () use ($tenant) {
             return DB::table('settings')
                 ->where('tenant', '=', $tenant)
                 ->get()
-                ->keyBy('name')
-                ->toArray();
+                ->keyBy('key');
         });
     }
 
@@ -40,25 +40,23 @@ class Settings
         $tenant = $options['tenant'] ?? self::DEFAULT_TENANT;
         $settings = $this->getSettings($tenant);
 
-        collect($settings)->map(static function($setting) {
-            $setting['value'] = Crypt::decrypt($setting['value']);
+        $settings->map(static function($setting) {
+            $setting->value = Crypt::decrypt($setting->value);
             return $setting;
         });
 
         if ($key === null) {
-            return $settings;
+            return $settings->toArray();
         }
 
         if (is_array($key)) {
-            $result = [];
-            foreach ($key as $k) {
-                $result[] = $settings[$k];
-            }
-            return $result;
+            return $settings->filter(static function($v, $k) use ($key) {
+                return in_array($k, $key, true);
+            })->pluck('value', 'key');
         }
 
-        if (array_key_exists($key, $settings)) {
-            return $settings[$key];
+        if ($settings->has($key)) {
+            return $settings->get($key)->value;
         }
 
         return [];
@@ -76,8 +74,7 @@ class Settings
     {
         $tenant = $options['tenant'] ?? self::DEFAULT_TENANT;
         $settings = $this->getSettings($tenant);
-        dump($settings);
-        return array_key_exists($key, $settings);
+        return $settings->has($key);
     }
 
     /**
