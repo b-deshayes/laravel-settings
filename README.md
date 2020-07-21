@@ -11,10 +11,10 @@ Install the package via composer.
 composer require kotus/laravel-settings
 ```
 
-You can publish the migration and config files, then migrate the new settings table all in one go using:
+Be sure to run migration to create the settings table.
 
 ```bash
-php artisan vendor:publish --provider="Kotus\Settings\Providers\SettingsServiceProvider" --tag=migrations && php artisan migrate
+php artisan migrate
 ```
 
 ## Usage
