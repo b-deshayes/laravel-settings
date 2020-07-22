@@ -24,33 +24,35 @@ class TestSettings extends TestCase
     private function makeTestData(): void
     {
         $this->data = [
-            'key' => 'test',
+            'key' => 'the_key_value',
             'another_key' => 'another_test',
             'sensitive' => 'data'
         ];
 
-        foreach ($this->data as $k => $v)
-        {
-            Settings::set($k, $v);
-        }
+        $collection = collect($this->data);
+        $collection->each(static function($item, $key) use ($collection) {
+            Settings::add($key, $item, [
+                'flush' => $collection->keys()->last() === $key
+            ]);
+        });
     }
 
     /** @test */
     public function set_a_setting(): void
     {
-        Settings::set('test', 'test');
-        $this->assertDatabaseHas(self::DB_SETTINGS_TABLE_NAME, ['key' => 'test']);
+        Settings::set('key', 'test');
+        self::assertSame(Settings::get('key'), 'test');
     }
 
     /** @test */
-    public function set_a_tenant_setting(): void
+    public function add_a_tenant_setting(): void
     {
         $this->assertDatabaseMissing(self::DB_SETTINGS_TABLE_NAME, [
             'key' => 'test',
             'tenant' => 'test'
         ]);
 
-        Settings::set('test', 'test', ['tenant' => 'test']);
+        Settings::add('test', 'test', ['tenant' => 'test']);
 
         $this->assertDatabaseHas(self::DB_SETTINGS_TABLE_NAME, [
             'key' => 'test',
@@ -70,11 +72,11 @@ class TestSettings extends TestCase
     /** @test */
     public function get_a_setting(): void
     {
-        Settings::set('test', 'test');
-        $test = Settings::get('test');
+        Settings::set('sensitive', 'test');
+        $test = Settings::get('sensitive');
         self::assertSame($test, 'test');
         $this->assertDatabaseHas(self::DB_SETTINGS_TABLE_NAME, [
-           'key' => 'test'
+           'key' => 'sensitive'
         ]);
     }
 
@@ -128,5 +130,23 @@ class TestSettings extends TestCase
         $tenant = 'new_tenant';
         $setting = Settings::get('test', ['tenant' => $tenant]);
         self::assertTrue(Cache::has('settings.' . $tenant));
+    }
+
+    /** @test */
+    public function set_not_existing_key(): void
+    {
+        self::assertFalse(Settings::set('not_existing_key', 'value'));
+        $this->assertDatabaseMissing(self::DB_SETTINGS_TABLE_NAME, [
+            'key' => 'not_existing_key'
+        ]);
+    }
+
+    /** @test */
+    public function add_an_existing_key(): void
+    {
+        self::assertFalse(Settings::add('key', 'value'));
+        $this->assertDatabaseHas(self::DB_SETTINGS_TABLE_NAME, [
+            'key' => 'key'
+        ]);
     }
 }

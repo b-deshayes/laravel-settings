@@ -20,7 +20,11 @@ class Settings
      */
     private function getSettings(string $tenant = self::DEFAULT_TENANT): Collection
     {
-        return Cache::rememberForever('settings.' . $tenant, static function () use ($tenant) {
+        // TODO: Add TTL to config
+        $ttl = now()->addMinutes(30);
+        $key = 'settings.' . $tenant;
+
+        return Cache::remember($key, $ttl, static function () use ($tenant) {
             return DB::table('settings')
                 ->where('tenant', '=', $tenant)
                 ->get()
@@ -70,7 +74,7 @@ class Settings
      * @param array $options
      * @return boolean
      */
-    public function has($key, $options = []): bool
+    public function has(string $key, array $options = []): bool
     {
         $tenant = $options['tenant'] ?? self::DEFAULT_TENANT;
         $settings = $this->getSettings($tenant);
@@ -85,14 +89,42 @@ class Settings
      * @param array $options
      * @return boolean
      */
-    public function set($key, $value, $options = []): bool
+    public function set(string $key, string $value, array $options = []): bool
     {
         $tenant = $options['tenant'] ?? self::DEFAULT_TENANT;
+
+        if (!$this->has($key, ['tenant' => $tenant])) {
+            return false;
+        }
 
         DB::table('settings')->where([
             ['key', '=', $key],
             ['tenant', '=', $tenant]
-        ])->delete();
+        ])->update([
+            'value' => Crypt::encrypt($value)
+        ]);
+
+        $this->flushCache([$tenant]);
+
+        return true;
+    }
+
+    /**
+     * Add a new key/value pair setting.
+     *
+     * @param string $key
+     * @param string $value
+     * @param array $options
+     * @return bool
+     */
+    public function add(string $key, string $value, array $options = []): bool
+    {
+        $tenant = $options['tenant'] ?? self::DEFAULT_TENANT;
+        $flush = $options['flush'] ?? true;
+
+        if ($this->has($key, ['tenant' => $tenant])) {
+            return false;
+        }
 
         DB::table('settings')->insert([
             'key' => $key,
@@ -100,8 +132,28 @@ class Settings
             'tenant' => $tenant
         ]);
 
-        Cache::forget('settings' . $tenant);
+        if ($flush) {
+            $this->flushCache([$tenant]);
+        }
 
         return true;
+    }
+
+    /**
+     * Allow to flush full cached settings or specifics tenants.
+     *
+     * @param array $tenants
+     */
+    public function flushCache(array $tenants = []): void
+    {
+        DB::table('settings')
+            ->select('tenant')
+            ->distinct()
+            ->get('tenant')
+            ->each(static function ($item) use ($tenants) {
+                if (in_array($item->tenant, $tenants, true) || count($tenants) === 0) {
+                    Cache::forget('settings.' . $item->tenant);
+                }
+            });
     }
 }
