@@ -7,3 +7,5 @@ vendor/*
 !/laravel-settings.iml
 
 .idea/
+
+laravel-settings.iml

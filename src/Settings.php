@@ -9,11 +9,10 @@ use Illuminate\Support\Facades\DB;
 
 class Settings
 {
-
     public const DEFAULT_TENANT = 'main';
 
     /**
-     * Get the settings
+     * Get and cached the settings.
      *
      * @param string $tenant
      * @return Collection
@@ -44,7 +43,7 @@ class Settings
         $tenant = $options['tenant'] ?? self::DEFAULT_TENANT;
         $settings = $this->getSettings($tenant);
 
-        $settings->map(static function($setting) {
+        $settings->map(static function ($setting) {
             $setting->value = Crypt::decrypt($setting->value);
             return $setting;
         });
@@ -54,7 +53,7 @@ class Settings
         }
 
         if (is_array($key)) {
-            return $settings->filter(static function($v, $k) use ($key) {
+            return $settings->filter(static function ($v, $k) use ($key) {
                 return in_array($k, $key, true);
             })->pluck('value', 'key');
         }
