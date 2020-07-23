@@ -1,4 +1,9 @@
 .DS_Store
-vendor
-
+vendor/*
 .phpunit.result.cache
+.idea/*
+!/.idea/
+.php_cs.cache
+!/laravel-settings.iml
+
+.idea/
