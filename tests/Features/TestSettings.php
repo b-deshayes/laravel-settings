@@ -37,6 +37,12 @@ class TestSettings extends TestCase
         });
     }
 
+    public function testAssertDefaultSettings(): void
+    {
+        self::assertTrue(Settings::has('first_key'));
+        self::assertTrue(Settings::has('other_tenant_key', ['tenant' => 'custom']));
+    }
+
     public function testSetASetting(): void
     {
         Settings::set('key', 'test');

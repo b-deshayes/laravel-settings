@@ -9,7 +9,6 @@ use Illuminate\Support\Facades\DB;
 
 class Settings
 {
-    public const DEFAULT_TENANT = 'main';
 
     /**
      * Get and cached the settings.
@@ -17,10 +16,10 @@ class Settings
      * @param string $tenant
      * @return Collection
      */
-    private function getSettings(string $tenant = self::DEFAULT_TENANT): Collection
+    private function getSettings(string $tenant = null): Collection
     {
-        // TODO: Add TTL to config
-        $ttl = now()->addMinutes(30);
+        $tenant = $tenant ?? (string)config('settings.default_tenant', 'main');
+        $ttl = now()->addMinutes(config('settings.cache_ttl'));
         $key = 'settings.' . $tenant;
 
         return Cache::remember($key, $ttl, static function () use ($tenant) {
@@ -40,7 +39,7 @@ class Settings
      */
     public function get($key = null, array $options = [])
     {
-        $tenant = $options['tenant'] ?? self::DEFAULT_TENANT;
+        $tenant = $options['tenant'] ?? config('settings.default_tenant', 'main');
         $settings = $this->getSettings($tenant);
 
         $settings->map(static function ($setting) {
@@ -75,7 +74,7 @@ class Settings
      */
     public function has(string $key, array $options = []): bool
     {
-        $tenant = $options['tenant'] ?? self::DEFAULT_TENANT;
+        $tenant = $options['tenant'] ?? config('settings.default_tenant', 'main');
         $settings = $this->getSettings($tenant);
         return $settings->has($key);
     }
@@ -90,7 +89,7 @@ class Settings
      */
     public function set(string $key, string $value, array $options = []): bool
     {
-        $tenant = $options['tenant'] ?? self::DEFAULT_TENANT;
+        $tenant = $options['tenant'] ?? config('settings.default_tenant', 'main');
 
         if (!$this->has($key, ['tenant' => $tenant])) {
             return false;
@@ -118,7 +117,7 @@ class Settings
      */
     public function add(string $key, string $value, array $options = []): bool
     {
-        $tenant = $options['tenant'] ?? self::DEFAULT_TENANT;
+        $tenant = $options['tenant'] ?? config('settings.default_tenant', 'main');
         $flush = $options['flush'] ?? true;
 
         if ($this->has($key, ['tenant' => $tenant])) {

@@ -14,7 +14,15 @@ class SettingsServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        $this->loadMigrationsFrom(dirname(__DIR__, 2) . '/database/migrations');
+        $root = dirname(__DIR__, 2);
+
+        if (function_exists('config_path')) {
+            $this->publishes([
+                $root . '/config/settings.php' => config_path('settings.php'),
+            ], 'config');
+        }
+
+        $this->loadMigrationsFrom($root . '/database/migrations');
     }
 
     /**
