@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Kotus\Settings\Database\Seeder\SettingSeeder;
 
 class CreateSettingsTable extends Migration
 {
@@ -21,6 +22,9 @@ class CreateSettingsTable extends Migration
                 $table->primary(['key', 'tenant']);
                 $table->unique(['key', 'tenant']);
             });
+
+            $seeder = new SettingSeeder();
+            $seeder->run();
         }
     }
 
