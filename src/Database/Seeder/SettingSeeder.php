@@ -14,8 +14,8 @@ class SettingSeeder extends Seeder
     {
         collect(config('settings.defaults', []))->each(static function($value, $key) {
             $tenant = is_array($value) && !empty($value['tenant']) ? $value['tenant'] : config('settings.default_tenant', 'main');
-            $value = is_array($value) && !empty($value['value']) ? $value['value'] : $value;
-            Settings::add($key, (string)$value, [
+            $value = is_array($value) && !empty($value['value']) ? (string)$value['value'] : (string)$value;
+            Settings::add($key, $value, [
                 'tenant' => $tenant
             ]);
         });
